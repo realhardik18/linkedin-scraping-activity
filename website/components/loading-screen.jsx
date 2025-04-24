@@ -39,7 +39,7 @@ export default function LoadingScreen() {
 
   return (
     <div className="fixed inset-0 bg-black flex flex-col items-center justify-center">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-mono text-white text-center">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-mono text-blue-400 text-center">
         <div className="mb-8 text-center">
           <pre className="inline-block text-xs md:text-sm leading-none font-mono">
             {asciiGrid.map((row, i) => (
@@ -50,12 +50,15 @@ export default function LoadingScreen() {
                     initial={{ opacity: 0.3 }}
                     animate={{ opacity: [0.3, 1, 0.3] }}
                     transition={{
-                      duration: 2,
+                      duration: 1.5,
                       repeat: Number.POSITIVE_INFINITY,
                       repeatType: "reverse",
-                      delay: ((i * cols + j) * 0.01) % 1,
+                      delay: ((i * cols + j) * 0.01) % 0.8,
                     }}
-                    className="inline-block w-[1ch]"
+                    className="inline-block w-[1ch] text-blue-500"
+                    style={{
+                      textShadow: "0 0 8px rgba(59, 130, 246, 0.7)"
+                    }}
                   >
                     {char}
                   </motion.span>
@@ -65,11 +68,12 @@ export default function LoadingScreen() {
           </pre>
         </div>
         <motion.p
-          className="text-xl font-bold tracking-widest"
+          className="text-xl font-bold tracking-widest text-blue-400"
           animate={{ opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY }}
+          style={{ textShadow: "0 0 10px rgba(59, 130, 246, 0.7)" }}
         >
-          LOADING IDEAS
+          LOADING POSTS
         </motion.p>
       </motion.div>
     </div>
