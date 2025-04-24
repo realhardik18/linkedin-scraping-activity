@@ -4,13 +4,13 @@ import { useState, useEffect } from "react"
 
 // No author, no avatar, no handle, no timestamp, no tweet_url, no retweets
 
-export default function TweetCard({ tweet }) {
+export default function PostCard({ post }) {
   const [expanded, setExpanded] = useState(false)
   const maxChars = 100
-  const isLongTweet = tweet.content.length > maxChars
-  const displayContent = !isLongTweet 
-    ? tweet.content 
-    : `${tweet.content.substring(0, maxChars)}...`
+  const isLongPost = post.content.length > maxChars
+  const displayContent = !isLongPost 
+    ? post.content 
+    : `${post.content.substring(0, maxChars)}...`
 
   useEffect(() => {
     if (expanded) {
@@ -28,15 +28,15 @@ export default function TweetCard({ tweet }) {
       <div className="border border-white/20 rounded-lg p-4 bg-black hover:bg-black hover:border-white/50 hover:shadow-[0_0_15px_rgba(255,255,255,0.25)] transition-all duration-200 hover:scale-[1.02] h-full flex flex-col">
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            {tweet.tag && (
+            {post.tag && (
               <Badge variant="outline" className="text-xs bg-black hover:bg-white/10 border-white/30 text-white">
-                #{tweet.tag}
+                #{post.tag}
               </Badge>
             )}
           </div>
           <div className="mb-4">
             <p className="font-mono text-white leading-relaxed whitespace-pre-wrap">{displayContent}</p>
-            {isLongTweet && (
+            {isLongPost && (
               <button 
                 onClick={() => setExpanded(true)} 
                 className="text-blue-400 hover:text-blue-500 text-sm font-mono mt-2 inline-block"
@@ -47,20 +47,20 @@ export default function TweetCard({ tweet }) {
           </div>
           <div className="flex items-center justify-between mt-auto pt-3 border-t border-white/20">
             <div className="flex items-center space-x-4">
-              <span className="flex items-center space-x-1 text-white/70 tweet-interact">
+              <span className="flex items-center space-x-1 text-white/70 post-interact">
                 <MessageCircle className="h-4 w-4" />
-                <span className="text-xs font-mono">{tweet.comments_count}</span>
+                <span className="text-xs font-mono">{post.comments_count}</span>
               </span>
-              <span className="flex items-center space-x-1 text-white/70 tweet-interact">
+              <span className="flex items-center space-x-1 text-white/70 post-interact">
                 <Heart className="h-4 w-4" />
-                <span className="text-xs font-mono">{tweet.likes}</span>
+                <span className="text-xs font-mono">{post.likes}</span>
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Modal for expanded tweet */}
+      {/* Modal for expanded post */}
       {expanded && (
         <div 
           className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 animate-[fadeIn_0.2s_ease-in-out]" 
@@ -78,22 +78,22 @@ export default function TweetCard({ tweet }) {
             }}
           >
             <div className="flex flex-wrap items-center gap-2 mb-4">
-              {tweet.tag && (
+              {post.tag && (
                 <Badge variant="outline" className="text-xs bg-black hover:bg-white/10 border-white/30 text-white">
-                  #{tweet.tag}
+                  #{post.tag}
                 </Badge>
               )}
             </div>
-            <p className="font-mono text-white text-lg leading-relaxed whitespace-pre-wrap mb-6">{tweet.content}</p>
+            <p className="font-mono text-white text-lg leading-relaxed whitespace-pre-wrap mb-6">{post.content}</p>
             <div className="flex items-center gap-8 pt-4 border-t border-white/20">
               <div className="flex items-center space-x-4">
-                <span className="flex items-center space-x-1 text-white/70 tweet-interact">
+                <span className="flex items-center space-x-1 text-white/70 post-interact">
                   <MessageCircle className="h-5 w-5" />
-                  <span className="text-sm font-mono">{tweet.comments_count}</span>
+                  <span className="text-sm font-mono">{post.comments_count}</span>
                 </span>
-                <span className="flex items-center space-x-1 text-white/70 tweet-interact">
+                <span className="flex items-center space-x-1 text-white/70 post-interact">
                   <Heart className="h-5 w-5" />
-                  <span className="text-sm font-mono">{tweet.likes}</span>
+                  <span className="text-sm font-mono">{post.likes}</span>
                 </span>
               </div>
             </div>
@@ -110,10 +110,10 @@ export default function TweetCard({ tweet }) {
           from { opacity: 0; transform: scale(0.95);}
           to { opacity: 1; transform: scale(1);}
         }
-        .tweet-interact {
+        .post-interact {
           transition: transform 0.2s ease;
         }
-        .tweet-interact:hover {
+        .post-interact:hover {
           transform: scale(1.15);
         }
       `}</style>

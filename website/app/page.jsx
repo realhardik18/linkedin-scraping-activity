@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import TweetFeed from "@/components/tweet-feed"
+import PostFeed from "@/components/tweet-feed"
 import SearchBar from "@/components/search-bar"
 import FilterBar from "@/components/filter-bar"
 import LoadingScreen from "@/components/loading-screen"
@@ -9,50 +9,46 @@ import LoadingScreen from "@/components/loading-screen"
 export default function Home() {
   const [isLoading, setIsLoading] = useState(true)
   const [isFiltering, setIsFiltering] = useState(false)
-  const [tweets, setTweets] = useState([])
-  const [filteredTweets, setFilteredTweets] = useState([])
+  const [posts, setPosts] = useState([])
+  const [filteredPosts, setFilteredPosts] = useState([])
   const [searchQuery, setSearchQuery] = useState("")
   const [activeFilter, setActiveFilter] = useState("all")
   const [minLikes, setMinLikes] = useState(0)
   const [dateRange, setDateRange] = useState({ start: "", end: "" })
   const [selectedAuthors, setSelectedAuthors] = useState([])
   const [currentPage, setCurrentPage] = useState(1)
-  const [tweetsPerPage, setTweetsPerPage] = useState(9) // Changed to multiple of 3
-  const [paginatedTweets, setPaginatedTweets] = useState([])
+  const [postsPerPage, setPostsPerPage] = useState(9) // Changed to multiple of 3
+  const [paginatedPosts, setPaginatedPosts] = useState([])
+  const [availableTags, setAvailableTags] = useState([])
+  const [selectedTags, setSelectedTags] = useState([])
 
   // Load data from public/data.json and show loading screen for exactly 2 seconds
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true)
-        const response = await fetch("/data.json")
+        const response = await fetch("/posts.json")
         const data = await response.json()
 
-        // Map data.json structure to the required tweet format
-        const mappedTweets = data.map((item, index) => ({
+        // Extract unique tags
+        const uniqueTags = [...new Set(data.map(item => item.tag).filter(Boolean))]
+        setAvailableTags(uniqueTags)
+
+        // Map posts.json structure to post format (simpler structure)
+        const mappedPosts = data.map((item, index) => ({
           id: String(index + 1),
-          author: {
-            name: item.username,
-            handle: `@${item.username.toLowerCase().replace(/\s+/g, "")}`,
-            avatar: item.profile_img,
-          },
           content: item.content,
-          tweet_url: item.tweet_url,
-          timestamp: item.created_at,
-          date: new Date(item.created_at),
-          likes: item.likes,
-          retweets: item.reposts,
-          replies: item.bookmarks,
-          tags: [], // Add tags if needed
+          tag: item.tag,
+          comments_count: item.comments_count,
+          likes: item.likes
         }))
 
-        setTweets(mappedTweets)
-        setFilteredTweets(mappedTweets)
+        setPosts(mappedPosts)
+        setFilteredPosts(mappedPosts)
       } catch (error) {
-        console.error("Error loading tweets:", error)
+        console.error("Error loading posts:", error)
       }
       
-      // Always wait exactly 2 seconds before hiding loading screen to ensure everything is rendered
       setTimeout(() => {
         setIsLoading(false)
       }, 2000)
@@ -63,81 +59,65 @@ export default function Home() {
 
   // Handle search and filtering
   useEffect(() => {
-    // Show filtering state while applying filters
     setIsFiltering(true)
     
     const applyFilters = () => {
-      let result = [...tweets]
+      let result = [...posts]
 
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
         result = result.filter(
-          (tweet) =>
-            tweet.content.toLowerCase().includes(query) ||
-            tweet.author.name.toLowerCase().includes(query) ||
-            tweet.author.handle.toLowerCase().includes(query) ||
-            tweet.tags.some((tag) => tag.toLowerCase().includes(query))
+          (post) =>
+            post.content.toLowerCase().includes(query) ||
+            (post.tag && post.tag.toLowerCase().includes(query))
         )
       }
 
       if (minLikes > 0) {
-        result = result.filter(tweet => tweet.likes >= minLikes)
+        result = result.filter(post => post.likes >= minLikes)
       }
 
-      if (dateRange.start || dateRange.end) {
-        result = result.filter(tweet => {
-          const tweetDate = tweet.date.getTime()
-          const startDate = dateRange.start ? new Date(dateRange.start).getTime() : 0
-          const endDate = dateRange.end ? new Date(dateRange.end).getTime() : Infinity
-          return tweetDate >= startDate && tweetDate <= endDate
-        })
+      // Filter by selected tags
+      if (selectedTags.length > 0) {
+        result = result.filter(post => 
+          post.tag && selectedTags.includes(post.tag)
+        )
       }
 
-      if (selectedAuthors.length > 0) {
-        result = result.filter(tweet => 
-          selectedAuthors.some(author => 
-            tweet.author.handle.toLowerCase() === author.toLowerCase()
-          )
-        );
-      }
-
+      // Only keep the filters that match the new data structure
       if (activeFilter !== "all") {
         switch (activeFilter) {
           case "popular":
             result = result.sort((a, b) => b.likes - a.likes)
             break
-          case "recent":
-            result = result.sort((a, b) => b.date.getTime() - a.date.getTime())
-            break
           case "discussed":
-            result = result.sort((a, b) => b.replies - a.replies)
+            result = result.sort((a, b) => b.comments_count - a.comments_count)
             break
           default:
             break
         }
       }
 
-      setFilteredTweets(result)
-      setCurrentPage(1) // Reset to first page when filters change
+      setFilteredPosts(result)
+      setCurrentPage(1)
       setIsFiltering(false)
     }
 
-    // Debounce filter changes slightly to prevent UI freezing during rapid changes
     const timeoutId = setTimeout(applyFilters, 300)
     return () => clearTimeout(timeoutId)
-  }, [searchQuery, activeFilter, tweets, minLikes, dateRange, selectedAuthors])
+  }, [searchQuery, activeFilter, posts, minLikes, selectedTags])
 
-  // Apply pagination to filtered tweets
+  // Apply pagination to filtered posts
   useEffect(() => {
-    const indexOfLastTweet = currentPage * tweetsPerPage;
-    const indexOfFirstTweet = indexOfLastTweet - tweetsPerPage;
-    setPaginatedTweets(filteredTweets.slice(indexOfFirstTweet, indexOfLastTweet));
-  }, [filteredTweets, currentPage, tweetsPerPage]);
+    const indexOfLastPost = currentPage * postsPerPage;
+    const indexOfFirstPost = indexOfLastPost - postsPerPage;
+    setPaginatedPosts(filteredPosts.slice(indexOfFirstPost, indexOfLastPost));
+  }, [filteredPosts, currentPage, postsPerPage]);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
   
   const nextPage = () => {
-    if (currentPage < Math.ceil(filteredTweets.length / tweetsPerPage)) {
+    if (currentPage < Math.ceil(filteredPosts.length / postsPerPage)) {
       setCurrentPage(currentPage + 1);
     }
   };
@@ -157,14 +137,9 @@ export default function Home() {
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <header className="mb-8">
           <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-            <h1 className="text-3xl font-mono font-bold tracking-tight text-center sm:text-left">Steal This Idea</h1>
+            <h1 className="text-3xl font-mono font-bold tracking-tight text-center sm:text-left">Sales-101</h1>
             <div className="text-center sm:text-right text-sm text-white/70 font-mono space-y-1.5">
-              <p>thank you <a href="https://x.com/paraschopra" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline hover:text-blue-300 transition-colors">@paraschopra</a>,<a href="https://x.com/gregisenberg" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline hover:text-blue-300 transition-colors">@gregisenberg</a> & <a href="https://x.com/codyschneiderxx" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline hover:text-blue-300 transition-colors">@codyschneiderxx</a></p>
-              <div className="flex justify-center sm:justify-end gap-2">
-                <p><a href="https://hardikster4.gumroad.com/l/steal-this-idea" download className="text-red-400 hover:underline hover:text-red-300 transition-colors">support me</a></p>
-                <span>•</span>
-                <p><a href="https://github.com/realhardik18/steal-this-idea" target="_blank" rel="noopener noreferrer" className="text-white hover:underline hover:text-white/80 transition-colors">view repository</a></p>
-              </div>
+              <p>a collection of posts from <a href="https://www.linkedin.com/in/chrisorlob/recent-activity/all/" className="text-cyan-300">@chrisorlob</a></p>
               <p>made by <a href="https://x.com/realhardik18" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline hover:text-cyan-300 transition-colors">@realhardik18</a></p>
             </div>
           </div>
@@ -179,8 +154,11 @@ export default function Home() {
               setDateRange={setDateRange}
               selectedAuthors={selectedAuthors}
               setSelectedAuthors={setSelectedAuthors}
-              resultsCount={filteredTweets.length}
-              totalCount={tweets.length}
+              availableTags={availableTags}
+              selectedTags={selectedTags}
+              setSelectedTags={setSelectedTags}
+              resultsCount={filteredPosts.length}
+              totalCount={posts.length}
               isFiltering={isFiltering}
             />
           </div>
@@ -190,13 +168,13 @@ export default function Home() {
           <div className="flex justify-center items-center py-12">
             <div className="animate-pulse text-white/70 font-mono">Updating results...</div>
           </div>
-        ) : filteredTweets.length > 0 ? (
+        ) : filteredPosts.length > 0 ? (
           <>
-            <TweetFeed tweets={paginatedTweets} />
+            <PostFeed posts={paginatedPosts} />
             <div className="mt-8 flex flex-col items-center">
               <div className="flex items-center space-x-1 text-sm font-mono">
                 <p className="text-white/70">
-                  Showing {((currentPage - 1) * tweetsPerPage) + 1} - {Math.min(currentPage * tweetsPerPage, filteredTweets.length)} of {filteredTweets.length} tweets
+                  Showing {((currentPage - 1) * postsPerPage) + 1} - {Math.min(currentPage * postsPerPage, filteredPosts.length)} of {filteredPosts.length} posts
                 </p>
               </div>
               <div className="mt-4 flex items-center space-x-3">
@@ -208,10 +186,10 @@ export default function Home() {
                   ← Prev
                 </button>
                 <div className="flex space-x-1.5">
-                  {Array.from({ length: Math.min(5, Math.ceil(filteredTweets.length / tweetsPerPage)) }, (_, i) => {
+                  {Array.from({ length: Math.min(5, Math.ceil(filteredPosts.length / postsPerPage)) }, (_, i) => {
                     // Show a window of pages around current page
                     let pageNum;
-                    const totalPages = Math.ceil(filteredTweets.length / tweetsPerPage);
+                    const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
                     
                     if (totalPages <= 5) {
                       pageNum = i + 1;
@@ -237,9 +215,9 @@ export default function Home() {
                 </div>
                 <button 
                   onClick={nextPage} 
-                  disabled={currentPage >= Math.ceil(filteredTweets.length / tweetsPerPage)}
+                  disabled={currentPage >= Math.ceil(filteredPosts.length / postsPerPage)}
                   className={`px-3 py-1.5 text-sm font-mono border border-white/20 rounded-md ${
-                    currentPage >= Math.ceil(filteredTweets.length / tweetsPerPage) 
+                    currentPage >= Math.ceil(filteredPosts.length / postsPerPage) 
                       ? 'text-white/40 cursor-not-allowed' 
                       : 'text-white hover:bg-white/5'
                   } transition-colors`}
@@ -248,11 +226,11 @@ export default function Home() {
                 </button>
               </div>
               <div className="mt-4 flex items-center space-x-2">
-                <label className="text-white/70 text-xs font-mono">Tweets per page:</label>
+                <label className="text-white/70 text-xs font-mono">Posts per page:</label>
                 <select 
-                  value={tweetsPerPage}
+                  value={postsPerPage}
                   onChange={(e) => {
-                    setTweetsPerPage(Number(e.target.value));
+                    setPostsPerPage(Number(e.target.value));
                     setCurrentPage(1); // Reset to first page when changing items per page
                   }}
                   className="bg-black text-white border border-white/20 rounded-md px-2 py-1 text-xs font-mono focus:outline-none focus:border-white/50"
@@ -269,7 +247,7 @@ export default function Home() {
           </>
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <p className="text-white/70 font-mono text-lg mb-2">No matching tweets found</p>
+            <p className="text-white/70 font-mono text-lg mb-2">No matching posts found</p>
             <p className="text-white/50 font-mono text-sm">Try adjusting your search criteria or filters</p>
           </div>
         )}

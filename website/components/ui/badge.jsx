@@ -14,7 +14,7 @@ const badgeVariants = cva(
           "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
         destructive:
           "border-transparent bg-destructive text-destructive-foreground shadow hover:bg-destructive/80",
-        outline: "border-foreground text-foreground", // Add border for outline
+        outline: "border-foreground text-foreground",
       },
     },
     defaultVariants: {
@@ -25,14 +25,17 @@ const badgeVariants = cva(
 
 function Badge({
   className,
-  variant = "default",
+  variant = "default", // Default value
   ...props
 }) {
-  // Ensure variant is always a valid string
-  const safeVariant = typeof variant === "string" && badgeVariants.variants.variant[variant]
-    ? variant
-    : "default";
-  return (<div className={cn(badgeVariants({ variant: safeVariant }), className)} {...props} />);
+  // Use the safer approach to handle variant
+  const classNames = cn(
+    badgeVariants({ 
+      variant: typeof variant === 'string' ? variant : 'default' 
+    }), 
+    className
+  );
+  return (<div className={classNames} {...props} />);
 }
 
 export { Badge, badgeVariants }
