@@ -29,9 +29,9 @@ for cookie in cookies:
 
 print('added all {} cookies'.format(len(cookies)))
 driver.get(PAGE_URL)
-time.sleep(3)
+time.sleep(5)
 
-SCROLL_PAUSE_TIME = 2
+SCROLL_PAUSE_TIME = 4
 for i in range(10):
     print(f"Scrolling... ({i+1}/10)")
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
